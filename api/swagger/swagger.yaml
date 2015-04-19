@@ -1,7 +1,7 @@
 swagger: "2.0"
 info:
   version: "0.0.1"
-  title: Hello World App
+  title: CSCI3800 Scenario 1 Project Team 8
 # during dev, should point to your local machine
 host: localhost
 # basePath prefixes all resource paths 
@@ -17,8 +17,18 @@ consumes:
 # format of the responses to the client (Accepts)
 produces:
   - application/json
-x-a127-config: {}
-x-a127-services: {}
+x-a127-config:
+  CSCI3800_Team8_RemoteProxy.key: &apigeeProxyKey CONFIGURED
+  CSCI3800_Team8_RemoteProxy.uri: &apigeeProxyUri CONFIGURED
+x-a127-services:
+  basic:
+        provider: volos-oauth-apigee
+        options:
+          key: *apigeeProxyKey
+          uri: *apigeeProxyUri
+          passwordCheck:
+            helper: helper
+            function: passwordCheck
 paths:
   /hello:
     # binds a127 app logic to a route
@@ -45,6 +55,77 @@ paths:
           description: Error
           schema:
             $ref: "#/definitions/ErrorResponse"
+  /locationtest:
+    # binds a127 app logic to a route
+    x-swagger-router-controller: location
+    x-a127-apply: {}
+    get:
+      description: Returns a geographic location of an ip
+      # used as the method name of the controller
+      operationId: locationTest
+      parameters:
+        - name: ip
+          in: query
+          description: The ip address to be looked up
+          required: true
+          type: string
+      responses:
+        "200":
+          description: Success
+          schema:
+            # a pointer to a definition
+            $ref: "#/definitions/TestResponse"
+        # responses may fall through to errors
+        default:
+          description: Error
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+  /payment:
+    # binds a127 app logic to a route
+    x-swagger-router-controller: location
+    x-a127-apply: {}
+    post:
+      description: Approves/Denies a payment transaction based on ip location
+      # used as the method name of the controller
+      operationId: payment
+      parameters:
+        - name: ip
+          in: query
+          description: The ip address of the payer
+          required: true
+          type: string
+        - name: payerName
+          in: header
+          description: The name of the paying party
+          required: true
+          type: string
+        # payerName and payerPassword should be checked against basic security after everything works
+        - name: payerPassword
+          in: header
+          description: The password of the payer
+          required: true
+          type: string
+        - name: payeeName
+          in: header
+          description: The name of the party receiving payment
+          required: true
+          type: string
+        - name: amount
+          in: header
+          description: The payment amount
+          required: true
+          type: string
+      responses:
+        "200":
+          description: Success
+          schema:
+            # a pointer to a definition
+            $ref: "#/definitions/PaymentResponse"
+        # responses may fall through to errors
+        default:
+          description: Error
+          schema:
+            $ref: "#/definitions/ErrorResponse"
 # complex objects have schema definitions
 definitions:
   HelloWorldResponse:
@@ -59,3 +140,18 @@ definitions:
     properties:
       message:
         type: string
+  TestResponse:
+    required:
+      - message
+    properties:
+      message:
+        type: string
+  PaymentResponse:
+    required:
+      - message
+    properties:
+      message:
+        type: string
+securityDefinitions:
+  basic:
+    type: basic

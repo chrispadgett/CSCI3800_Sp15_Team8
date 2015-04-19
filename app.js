@@ -24,5 +24,5 @@ a127.init(function(config) {
   // begin listening for client requests
   app.listen(port);
 
-  console.log('try this:\ncurl http://127.0.0.1:' + port + '/hello?name=Scott');
+  console.log('Server started...');
 });
