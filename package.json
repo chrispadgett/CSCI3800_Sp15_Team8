@@ -10,6 +10,7 @@
   "dependencies": {
     "express": "3.x.x",
 	"usergrid": "",
+	"request": "",
     "a127-magic": "^0.7.0",
     "volos-analytics-apigee": "",
     "volos-analytics-common": "",
