@@ -38,6 +38,8 @@ paths:
       description: Returns 'Hello' to the caller
       # used as the method name of the controller
       operationId: hello
+      security:
+        - basic: []
       parameters:
         - name: name
           in: query
@@ -67,6 +69,36 @@ paths:
         - name: ip
           in: query
           description: The ip address to be looked up
+          required: true
+          type: string
+      responses:
+        "200":
+          description: Success
+          schema:
+            # a pointer to a definition
+            $ref: "#/definitions/TestResponse"
+        # responses may fall through to errors
+        default:
+          description: Error
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+  /compareuserlocationtest:
+    # binds a127 app logic to a route
+    x-swagger-router-controller: location
+    x-a127-apply: {}
+    get:
+      description: Compares a user to a location
+      # used as the method name of the controller
+      operationId: compareUserLocationTest
+      parameters:
+        - name: ip
+          in: query
+          description: The ip address to be checked
+          required: true
+          type: string
+        - name: paymentusername
+          in: query
+          description: The username of the payer to be checked
           required: true
           type: string
       responses:
