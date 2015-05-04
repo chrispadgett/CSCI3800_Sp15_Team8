@@ -120,19 +120,19 @@ function send_auth() {
 		res.setEncoding('utf-8');
 		res.on('data', function(data) {
 			console.log("\n\nAuthorize Response:\n" + data);
-			responseMessage = JSON.parse(data);
+			var j = JSON.parse(data);
+		
+			var transactionID = j.AuthorizeResponse.PaymentServiceResults.VisaResults.TransactionId;
 
-			// Parsing the response causing an error
-			//var j = JSON.parse(data);
-			/*if(j.AuthorizeResponse.TransactionStatus && j.AuthorizeResponse.TransactionTimestamp && j.AuthorizeResponse.RequestId && j.AuthorizeResponse.TransactionId) {
-				responseMessage = "Authorize Response:\nTransaction Status: " + j.AuthorizeResponse.TransactionStatus + "\n"
-					+ "Transaction Time Stamp: " + j.AuthorizeResponse.TransactionTimestamp  + "\n"
-					+ "Request ID: " + j.AuthorizeResponse.RequestId  + "\n"
-					+ "Transaction ID: " + j.AuthorizeResponse.TransactionId  + "\n";
+			var transactionResponse = {
+				Transaction_Status: j.AuthorizeResponse.TransactionStatus,
+				Transaction_Time: j.AuthorizeResponse.TransactionTimestamp,
+				Request_ID: j.AuthorizeResponse.RequestId,
+				Transaction_ID: j.AuthorizeResponse.PaymentServiceResults.VisaResults.TransactionId
 			}
-			else {
-				responseMessage = "Error: Problem with transaction";
-			}*/
+
+			responseMessage = JSON.parse(JSON.stringify(transactionResponse));
+
 		})
 	});
 
@@ -180,7 +180,7 @@ function payment(req, res) {
 	}
 
 	card = {
-		CardType: cardtype,
+		CardType: 'visa',
 		CardNumber: cardNum,
 		ExpirationMonth: cardExpMonth,
 		ExpirationYear: cardExpYear,
