@@ -114,37 +114,61 @@ paths:
             $ref: "#/definitions/ErrorResponse"
   /payment:
     # binds a127 app logic to a route
-    x-swagger-router-controller: location
+    x-swagger-router-controller: payment
     x-a127-apply: {}
+    get:
+      description: Test the payment api
+      # used as the method name of the controller
+      operationId: paymentTest
+      responses:
+        "200":
+          description: Success
+          schema:
+            # a pointer to a definition
+            $ref: "#/definitions/TestResponse"
+        # responses may fall through to errors
+        default:
+          description: Error
+          schema:
+            $ref: "#/definitions/ErrorResponse"
     post:
       description: Approves/Denies a payment transaction based on ip location
       # used as the method name of the controller
       operationId: payment
       parameters:
-        - name: ip
-          in: query
-          description: The ip address of the payer
+        - name: transactionAmount
+          in: header
+          description: amount for payment
           required: true
           type: string
-        - name: payerName
+        - name: zip
           in: header
-          description: The name of the paying party
+          description: Zip code of card for payment
           required: true
           type: string
-        # payerName and payerPassword should be checked against basic security after everything works
-        - name: payerPassword
+        - name: cardType
           in: header
-          description: The password of the payer
+          description: Type of card being used
           required: true
           type: string
-        - name: payeeName
+        - name: cardNum
           in: header
-          description: The name of the party receiving payment
+          description: Card number
           required: true
           type: string
-        - name: amount
+        - name: cardExpMonth
           in: header
-          description: The payment amount
+          description: month of expiration
+          required: true
+          type: string
+        - name: cardExpYear
+          in: header
+          description: year of expiration
+          required: true
+          type: string
+        - name: cvv
+          in: header
+          description: security number on back of cardExpMonth
           required: true
           type: string
       responses:

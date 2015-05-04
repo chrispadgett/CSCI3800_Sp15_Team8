@@ -4,7 +4,8 @@ var util = require('util');
 var http = require('http');
 
 module.exports = {
-  payment: payment
+  payment: payment,
+  paymentTest: paymentTest
 };
 
 /*
@@ -33,22 +34,22 @@ module.exports = {
 // Reference for PWS implementation: https://github.com/Vantiv/node.js_V6
 
 
-// Data to be sent to PWS (needs to be populated)
+// Data to be sent to PWS
 var merchant = {
-	NetworkRouting : '',
-	CashierNumber : '',
-	LaneNumber : '',
-	DivisionNumber : '',
-	ChainCode : '',
-	StoreNumber : '',
-	MerchantID : ''
+	NetworkRouting : '2J',
+	CashierNumber : '12345678',
+	LaneNumber : '123',
+	DivisionNumber : '000',
+	ChainCode : '70110',
+	StoreNumber : '00000001',
+	MerchantID : '4445012916106'
 }
 
 var terminal = {
-	TerminalID : '',
-	EntryMode : '',
-	Ipv4Address : '',
-	TerminalEnvironmentalCode : '',
+	TerminalID : '1',
+	EntryMode : 'manual',
+	Ipv4Address : '192.0.2.235',
+	TerminalEnvironmentalCode : 'electronic_cash_register',
 	PinEntry : 'none',
 	BalanceInquiry : 'false',
 	HostAdjustment : 'false',
@@ -58,32 +59,29 @@ var terminal = {
 }
 
 var transaction = {
-	TransactionID : '',
+	TransactionID : '123457',
+	PaymentType : 'single',
+	ReferenceNumber : '100001',
+	DraftLocatorID : '100000001',
+	ClerkNumber: '1234',
 	MarketCode : 'present',
 	TransactionTimestamp :  new Date().toISOString(),
-	ClerkNumber: '',
-	PaymentType : 'single',
-	ReferenceNumber : '',
-	DraftLocatorID : '',
-	AuthorizationCode: '',
-	OriginalAuthorizedAmount: '',
-	CaptureAmount : '',
-	OriginalReferenceNumber: '',
+	SystemTraceID : '100002',
 	TokenRequested : 'false',
-	SystemTraceID : '',
+	TransactionAmount : '10.00',
 	PartialApprovalCode: 'not_supported'
 }
 
 var address = {
-	BillingZipcode : '',
+	BillingZipcode : '33606',
 }
 
 var card = {
-	CardType: '',
-	CardNumber: '',
-	ExpirationMonth: '',
-	ExpirationYear:'',
-	CVV: '',
+	CardType: 'visa',
+	CardNumber: '4445222299990007',
+	ExpirationMonth: '12',
+	ExpirationYear:'2017',
+	CVV: '382',
 	
 }
 
@@ -97,9 +95,11 @@ var authorize = {
 
 var auth_string = JSON.stringify(authorize);
 
+var responseMessage;
+
 /**** IMPORTANT You will need to create a project at https://apideveloper.vantiv.com/ in order to get access to the sandbox and test your code ****/
 //licenseID used in the header. You will need to obtain a LicenseId before running this sample. 
-var licenseID = ''
+var licenseID = 'c51c61ca396f45ad84be48429799bf4d$$#$$sCLNeEBLQ3qNgWo5ukmqQOApq6o7SqcS$$#$$2016-05-03$$#$$dev_key$$#$$SHA512withRSA$$#$$RSA$$#$$1$$#$$980331B490C09BC67A1B490B0FC53525FCA96DE12A11BD0CE58410A5CB78F0649C31B3B740D11B49D4EA2C0D7CA535C6E7F2EBA83423A05D483483C0771ECC7F1681822273891F94BD868EE21620BC791948FCED3D4FB57739DA24D8C0F04196C7C73CD910C5E78B368177502B7DF84AC560C4DA239684229443F6B7E671BE5E1CDB769BA3971C31E493E7DA7912ADBDE2C77ADDBF38217E9B873DA5731E826D9E5699052883B13EE9F5CDBE70F68F6F7620898960B2538C7B987F8C70B47BC49FB249D3DDD524AF5130705C306B3D655573AE69E075C5B70D3D8D353FF845D93C044676085EA86F70A9941F07AE52039A991240B57EB812FE795310FF5FD549';
 var header = {
 	'Content-Type': 'application/json',
 	'licenseid': licenseID
@@ -119,29 +119,91 @@ function send_auth() {
 	var req = http.request(options, function(res) {
 		res.setEncoding('utf-8');
 		res.on('data', function(data) {
+			console.log("\n\nAuthorize Response:\n" + data);
+
+			// Parsing the response causing an error
 			var j = JSON.parse(data);
+
+			if(j.AuthorizeResponse.TransactionStatus && j.AuthorizeResponse.TransactionTimestamp && j.AuthorizeResponse.RequestId && j.AuthorizeResponse.TransactionId) {
+				responseMessage = "Authorize Response:\nTransaction Status: " + j.AuthorizeResponse.TransactionStatus + "\n"
+					+ "Transaction Time Stamp: " + j.AuthorizeResponse.TransactionTimestamp  + "\n"
+					+ "Request ID: " + j.AuthorizeResponse.RequestId  + "\n"
+					+ "Transaction ID: " + j.AuthorizeResponse.TransactionId  + "\n";
+			}
+			else {
+				responseMessage = "Error: Problem with transaction";
+			}
 		})
-	})
+	});
+
+	req.on('error', function(e) {
+	  console.log('problem with request: ' + e.message);
+	});
+
+	console.log('\n\nAuthorize Request:\n' + auth_string);
+	req.end(auth_string);
 }
 
 function payment(req, res) {
-	console.log('Payment Request Received');
-
 	var clientIp = req.headers['x-forwarded-for']
 		|| req.connection.remoteAddress
 		|| req.socket.remoteAddress
 		|| req.connection.socket.remoteAddress;
     console.log('clientIp: '+clientIp);
 
-    //send_auth();
+	console.log('Payment Request Received');
 
-	//  Skeleton code
-	var payerIp = req.swagger.params.ip.value;
-	var payerNameParam = req.swagger.params.payerName.value;
-	var payerPasswordParam = req.swagger.params.payerPassword.value;
-	var payeeNameParam = req.swagger.params.payeeName.value;
-	var amountParam = req.swagger.params.amount.value;
-	var responseMessage = util.format('Input info: %s %s %s %s %s', ipParam, payerNameParam, payerPasswordParam, payeeNameParam, amountParam);
+	var zip = req.swagger.params.zip.value;
+	var cardtype = req.swagger.params.cardType.value;
+	var cardNum = req.swagger.params.cardNum.value;
+	var cardExpMonth = req.swagger.params.cardExpMonth.value;
+	var cardExpYear = req.swagger.params.cardExpYear.value;
+	var cardCVV = req.swagger.params.cvv.value;
+	var transactionAmount = req.swagger.params.transactionAmount.value;
 
+	transaction = {
+		TransactionID : '123456',
+		PaymentType : 'single',
+		ReferenceNumber : '100001',
+		DraftLocatorID : '100000001',
+		ClerkNumber: '1234',
+		MarketCode : 'present',
+		TransactionTimestamp :  new Date().toISOString(),
+		SystemTraceID : '100002',
+		TokenRequested : 'false',
+		TransactionAmount : transactionAmount,
+		PartialApprovalCode: 'not_supported'
+	}
+
+    address = {
+		BillingZipcode : zip,
+	}
+
+	card = {
+		CardType: cardtype,
+		CardNumber: cardNum,
+		ExpirationMonth: cardExpMonth,
+		ExpirationYear: cardExpYear,
+		CVV: cardCVV,
+
+	}
+
+	authorize = {
+		merchant: merchant,
+		terminal: terminal,
+		transaction: transaction,
+		address: address,
+		card: card
+	}
+
+	auth_string = JSON.stringify(authorize);
+    send_auth();
+    responseMessage = responseMessage +  "{clientIp: " + clientIp + "}";
+	res.json(responseMessage);
+}
+
+function paymentTest(req, res) {
+	console.log('Payment Request Received');
+	send_auth();
 	res.json(responseMessage);
 }
