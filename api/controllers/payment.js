@@ -196,7 +196,6 @@ function payment(req, res) {
 
 				auth_string = JSON.stringify(authorize);
 			    send_auth();
-			    responseMessage = responseMessage +  "{clientIp: " + clientIp + "}";
 				res.json(responseMessage);
 			}
 			else
