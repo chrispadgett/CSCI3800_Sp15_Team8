@@ -2,7 +2,7 @@
 
 var util = require('util');
 var http = require('http');
-var location = require('./location');
+var locationTest = require('./location.js');
 
 module.exports = {
   payment: payment,
@@ -136,11 +136,13 @@ function send_auth() {
 }
 
 function payment(req, res) {
-	var clientIp = req.headers['x-forwarded-for']
+	var requestIp = req.headers['x-forwarded-for']
 		|| req.connection.remoteAddress
 		|| req.socket.remoteAddress
 		|| req.connection.socket.remoteAddress;
-    console.log('clientIp: '+clientIp);
+	var IpArr = requestIp.split(":");
+	console.log('clientIp: '+IpArr[IpArr.length-1]);
+	var clientIp = IpArr[IpArr.length-1];
 
     var paymentUsernameParam = req.swagger.params.paymentusername.value;
     var zip = req.swagger.params.zip.value;
@@ -151,8 +153,8 @@ function payment(req, res) {
 	var cardCVV = req.swagger.params.cvv.value;
 	var transactionAmount = req.swagger.params.transactionAmount.value;
 
-    location.getLocation(clientIp, function(location) {
-		location.compareLocation(paymentUsernameParam, location, function(authorized) {
+    locationTest.getLocation(clientIp, function(location) {
+		locationTest.compareLocation(paymentUsernameParam, location, function(authorized) {
 			if(authorized)
 			{
 				console.log('Payment Request Received');
