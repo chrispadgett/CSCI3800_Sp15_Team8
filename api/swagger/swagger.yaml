@@ -136,6 +136,11 @@ paths:
       # used as the method name of the controller
       operationId: payment
       parameters:
+        - name: paymentusername
+          in: header
+          description: The name of the payer
+          required: true
+          type: string
         - name: transactionAmount
           in: header
           description: amount for payment

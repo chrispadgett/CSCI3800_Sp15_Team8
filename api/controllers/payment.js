@@ -9,11 +9,6 @@ module.exports = {
 };
 
 /*
-  Functions in a127 controllers used for operations should take two parameters:
-
-  Param 1: a handle to the request object
-  Param 2: a handle to the response object
-
   PWS Endpoints:
   Sale:    						https://apis.vantiv.com/v1/credit/sale
 								https://apis.cert.vantiv.com/v1/credit/sale
@@ -97,8 +92,6 @@ var auth_string = JSON.stringify(authorize);
 
 var responseMessage;
 
-/**** IMPORTANT You will need to create a project at https://apideveloper.vantiv.com/ in order to get access to the sandbox and test your code ****/
-//licenseID used in the header. You will need to obtain a LicenseId before running this sample. 
 var licenseID = 'c51c61ca396f45ad84be48429799bf4d$$#$$sCLNeEBLQ3qNgWo5ukmqQOApq6o7SqcS$$#$$2016-05-03$$#$$dev_key$$#$$SHA512withRSA$$#$$RSA$$#$$1$$#$$980331B490C09BC67A1B490B0FC53525FCA96DE12A11BD0CE58410A5CB78F0649C31B3B740D11B49D4EA2C0D7CA535C6E7F2EBA83423A05D483483C0771ECC7F1681822273891F94BD868EE21620BC791948FCED3D4FB57739DA24D8C0F04196C7C73CD910C5E78B368177502B7DF84AC560C4DA239684229443F6B7E671BE5E1CDB769BA3971C31E493E7DA7912ADBDE2C77ADDBF38217E9B873DA5731E826D9E5699052883B13EE9F5CDBE70F68F6F7620898960B2538C7B987F8C70B47BC49FB249D3DDD524AF5130705C306B3D655573AE69E075C5B70D3D8D353FF845D93C044676085EA86F70A9941F07AE52039A991240B57EB812FE795310FF5FD549';
 var header = {
 	'Content-Type': 'application/json',
@@ -121,8 +114,6 @@ function send_auth() {
 		res.on('data', function(data) {
 			console.log("\n\nAuthorize Response:\n" + data);
 			var j = JSON.parse(data);
-		
-			var transactionID = j.AuthorizeResponse.PaymentServiceResults.VisaResults.TransactionId;
 
 			var transactionResponse = {
 				Transaction_Status: j.AuthorizeResponse.TransactionStatus,
@@ -132,7 +123,6 @@ function send_auth() {
 			}
 
 			responseMessage = JSON.parse(JSON.stringify(transactionResponse));
-
 		})
 	});
 
@@ -151,9 +141,8 @@ function payment(req, res) {
 		|| req.connection.socket.remoteAddress;
     console.log('clientIp: '+clientIp);
 
-	console.log('Payment Request Received');
-
-	var zip = req.swagger.params.zip.value;
+    var paymentUsernameParam = req.swagger.params.paymentusername.value;
+    var zip = req.swagger.params.zip.value;
 	var cardtype = req.swagger.params.cardType.value;
 	var cardNum = req.swagger.params.cardNum.value;
 	var cardExpMonth = req.swagger.params.cardExpMonth.value;
@@ -161,46 +150,234 @@ function payment(req, res) {
 	var cardCVV = req.swagger.params.cvv.value;
 	var transactionAmount = req.swagger.params.transactionAmount.value;
 
-	transaction = {
-		TransactionID : '123456',
-		PaymentType : 'single',
-		ReferenceNumber : '100001',
-		DraftLocatorID : '100000001',
-		ClerkNumber: '1234',
-		MarketCode : 'present',
-		TransactionTimestamp :  new Date().toISOString(),
-		SystemTraceID : '100002',
-		TokenRequested : 'false',
-		TransactionAmount : transactionAmount,
-		PartialApprovalCode: 'not_supported'
-	}
+    getLocation(clientIp, function(location) {
+		compareLocation(paymentUsernameParam, location, function(authorized) {
+			if(authorized)
+			{
+				console.log('Payment Request Received');
 
-    address = {
-		BillingZipcode : zip,
-	}
+				transaction = {
+					TransactionID : '123456',
+					PaymentType : 'single',
+					ReferenceNumber : '100001',
+					DraftLocatorID : '100000001',
+					ClerkNumber: '1234',
+					MarketCode : 'present',
+					TransactionTimestamp :  new Date().toISOString(),
+					SystemTraceID : '100002',
+					TokenRequested : 'false',
+					TransactionAmount : transactionAmount,
+					PartialApprovalCode: 'not_supported'
+				}
 
-	card = {
-		CardType: 'visa',
-		CardNumber: cardNum,
-		ExpirationMonth: cardExpMonth,
-		ExpirationYear: cardExpYear,
-		CVV: cardCVV,
+			    address = {
+					BillingZipcode : zip,
+				}
 
-	}
+				card = {
+					CardType: 'visa',
+					CardNumber: cardNum,
+					ExpirationMonth: cardExpMonth,
+					ExpirationYear: cardExpYear,
+					CVV: cardCVV,
 
-	authorize = {
-		merchant: merchant,
-		terminal: terminal,
-		transaction: transaction,
-		address: address,
-		card: card
-	}
+				}
 
-	auth_string = JSON.stringify(authorize);
-    send_auth();
-    responseMessage = responseMessage +  "{clientIp: " + clientIp + "}";
-	res.json(responseMessage);
+				authorize = {
+					merchant: merchant,
+					terminal: terminal,
+					transaction: transaction,
+					address: address,
+					card: card
+				}
+
+				auth_string = JSON.stringify(authorize);
+			    send_auth();
+			    responseMessage = responseMessage +  "{clientIp: " + clientIp + "}";
+				res.json(responseMessage);
+			}
+			else
+			{
+				console.log('The user is NOT authorized to use this location');
+				res.json('The user is NOT authorized to use this location');
+			}
+		});
+	});
+
+	
 }
+
+function getLocation(ip, callback) {
+	// First check if we already have the location in BaaS
+	checkBaaSForLocation(ip, function(location) {
+		//  If it doesn't exist, look it up and add it
+		if(!location)
+		{
+			lookupLocation(ip, function(location) {
+				if (location)
+				{
+					storeLocationInBaaS(location, function(loc) {
+						callback(loc)
+					});
+				}
+			});
+		}
+		else
+		{
+			callback(location);
+		}
+	});
+}
+
+function checkBaaSForLocation(ip, callback) {
+	//  This function should check the BaaS for the location before doing full lookup
+	console.log(util.format('Checking BaaS for ip %s', ip));
+	var dataClient = new usergrid.client({
+		orgName:'csci3800_sp15_team8',
+		appName:'Sandbox'
+	});
+	
+	var options = {
+		endpoint:'locations',
+		qs:{ql:"select * where ip='" + ip + "'"}
+	};
+	
+	dataClient.request(options, function (error, response) {
+		if (error)
+		{
+			console.log(util.format('There was an error checking the BaaS for ip %s', ip));
+			console.log(error);
+			callback(0);
+		}
+		else
+		{
+			if(response.entities.length > 0)
+			{
+				console.log('Location exists in the BaaS');
+				console.log(response.entities[0]);
+				callback(response.entities[0]);
+			}
+			else
+			{
+				console.log(util.format('Location does not exist in BaaS'));
+				console.log(response);
+				callback(0);
+			}
+		}
+	});
+}
+
+function storeLocationInBaaS(locationJSON, callback) {
+	console.log(util.format('Storing ip %s in the BaaS for future use', locationJSON.ip));
+	var dataClient = new usergrid.client({
+		orgName:'csci3800_sp15_team8',
+		appName:'Sandbox'
+	});
+
+	var optionsPOST = {
+		method:'POST',
+		endpoint:'locations',
+		qs:{ql:"select * where ip='" + locationJSON.ip + "'"},
+		body:locationJSON
+	};
+	
+	dataClient.request(optionsPOST, function (error, response) {
+		if (error)
+		{
+			console.log('Error in POST to BaaS');
+			console.log(error);
+			callback(locationJSON);
+		} 
+		else 
+		{
+			console.log('POST to BaaS successful');
+			console.log(response);
+			callback(locationJSON);
+		}
+	});
+}
+
+function lookupLocation(ip, callback) {
+	console.log(util.format('Looking up location of %s', ip));
+	var url = 'http://www.telize.com/geoip/' + ip;
+	
+	request({url: url, json: true}, function (error, response, body) {
+		if (!error && response.statusCode == 200)
+		{
+			console.log(util.format('Lookup for %s successful', ip));
+			console.log(body);
+			callback(body);
+		}
+		else
+		{
+			console.log(error);
+			callback(0);
+		}
+	})
+}
+
+function compareLocation(paymentUsername, locationResponse, callback) {
+	console.log(util.format('Comparing %s against accepted locations', paymentUsername));
+	
+	// Quick check to see if the location has a city
+	// not all ips have a city as documented in the API we are calling against
+	if(!locationResponse.city)
+	{
+		console.log('The ip location does not have a city.');
+		callback(false);
+	}
+	else
+	{
+		var dataClient = new usergrid.client({
+			orgName:'csci3800_sp15_team8',
+			appName:'Sandbox'
+		});
+		
+		var options = {
+			endpoint:'paymentusers',
+			qs:{ql:"select * where username='" + paymentUsername + "'"}
+		};
+		
+		dataClient.request(options, function (error, response) {
+			if (error)
+			{
+				console.log(util.format('There was an error checking the BaaS for paymentUser %s', paymentUsername));
+				console.log(error);
+				callback(false);
+			}
+			else
+			{
+				if(response.entities.length == 0)
+				{
+					console.log(util.format('paymentUser %s was not found in the BaaS.', paymentUsername));
+					callback(false);
+				}
+				else
+				{
+					checkAllLocations(locationResponse.city, response.entities[0].acceptedLocations, function(paymentLocationAccepted) {
+						callback(paymentLocationAccepted);
+					});
+				}
+			}
+		});
+	}
+}
+
+function checkAllLocations(acceptableLocation, locationArray, callback) {
+	var locationFound = false;
+	for(var i = 0; i < locationArray.length; ++i)
+	{
+		console.log(util.format('Checking accepted location: %s', locationArray[i]));
+		if(locationArray[i] === acceptableLocation)
+		{
+			console.log('A location has been accepted');
+			locationFound = true;
+		}
+	}
+	
+	callback(locationFound);
+}
+
 
 function paymentTest(req, res) {
 	console.log('Payment Request Received');
