@@ -8,6 +8,8 @@ var helper = require('../helpers/helper');
 module.exports = {
   locationTest: locationTest,
   compareUserLocationTest: compareUserLocationTest
+  compareLocation: compareLocation,
+  getLocation: getLocation
 };
 
 /*
