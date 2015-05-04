@@ -120,11 +120,11 @@ function send_auth() {
 		res.setEncoding('utf-8');
 		res.on('data', function(data) {
 			console.log("\n\nAuthorize Response:\n" + data);
+			responseMessage = JSON.parse(data);
 
 			// Parsing the response causing an error
-			var j = JSON.parse(data);
-
-			if(j.AuthorizeResponse.TransactionStatus && j.AuthorizeResponse.TransactionTimestamp && j.AuthorizeResponse.RequestId && j.AuthorizeResponse.TransactionId) {
+			//var j = JSON.parse(data);
+			/*if(j.AuthorizeResponse.TransactionStatus && j.AuthorizeResponse.TransactionTimestamp && j.AuthorizeResponse.RequestId && j.AuthorizeResponse.TransactionId) {
 				responseMessage = "Authorize Response:\nTransaction Status: " + j.AuthorizeResponse.TransactionStatus + "\n"
 					+ "Transaction Time Stamp: " + j.AuthorizeResponse.TransactionTimestamp  + "\n"
 					+ "Request ID: " + j.AuthorizeResponse.RequestId  + "\n"
@@ -132,7 +132,7 @@ function send_auth() {
 			}
 			else {
 				responseMessage = "Error: Problem with transaction";
-			}
+			}*/
 		})
 	});
 
