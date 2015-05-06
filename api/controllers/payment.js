@@ -114,16 +114,7 @@ function send_auth() {
 		res.setEncoding('utf-8');
 		res.on('data', function(data) {
 			console.log("\n\nAuthorize Response:\n" + data);
-			var j = JSON.parse(data);
-
-			var transactionResponse = {
-				Transaction_Status: j.AuthorizeResponse.TransactionStatus,
-				Transaction_Time: j.AuthorizeResponse.TransactionTimestamp,
-				Request_ID: j.AuthorizeResponse.RequestId,
-				Transaction_ID: j.AuthorizeResponse.PaymentServiceResults.VisaResults.TransactionId
-			}
-
-			responseMessage = JSON.parse(JSON.stringify(transactionResponse));
+			responseMessage = JSON.parse(data);
 		})
 	});
 
